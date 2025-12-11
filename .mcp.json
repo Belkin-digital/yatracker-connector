@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yatracker": {
+      "command": "docker",
+      "args": ["exec", "-i", "yatracker-mcp-server", "python3.11", "-m", "scripts.mcp_server"]
+    }
+  }
+}

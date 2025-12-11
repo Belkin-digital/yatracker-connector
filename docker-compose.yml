@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  yatracker-mcp:
+    build: .
+    container_name: yatracker-mcp-server
+    environment:
+      - YATRACKER_TOKEN=${YATRACKER_TOKEN}
+      - YATRACKER_ORG_ID=${YATRACKER_ORG_ID}
+    env_file:
+      - .env
+    # Keep container running for stdio access via docker exec
+    command: tail -f /dev/null
+    restart: unless-stopped

@@ -1,0 +1,4 @@
+yandex-tracker-client
+python-dotenv
+rich
+mcp>=1.0.0

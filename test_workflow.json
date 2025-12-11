@@ -1,0 +1,44 @@
+{
+  "name": "Custom API Workflow",
+  "initialAction": {
+    "id": "initial",
+    "target": "13"
+  },
+  "steps": [
+    {
+      "status": "13",
+      "actions": [
+        {
+          "id": "approve",
+          "name": "Одобрить",
+          "target": "15"
+        },
+        {
+          "id": "reject",
+          "name": "Отклонить",
+          "target": "14"
+        }
+      ]
+    },
+    {
+      "status": "15",
+      "actions": [
+        {
+          "id": "start_work",
+          "name": "В работу",
+          "target": "3"
+        }
+      ]
+    },
+    {
+      "status": "3",
+      "actions": [
+        {
+          "id": "to_test",
+          "name": "На тестирование",
+          "target": "12"
+        }
+      ]
+    }
+  ]
+}

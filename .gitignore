@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment variables - NEVER commit credentials!
+.env
+.env.local
+.env.*.local
+
+# Downloads
+downloads/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+.dockerignore
