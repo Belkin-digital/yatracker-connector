@@ -66,10 +66,9 @@ def attach_file(issue, file_path: str | Path, filename: Optional[str] = None):
     """Attach a binary file to the issue."""
     path = Path(file_path)
     with path.open("rb") as handle:
-        return issue.attachments.create(
-            file=handle,
-            filename=filename or path.name,
-        )
+        # yandex-tracker-client determines filename from the file object; older versions
+        # do not accept a separate "filename" kwarg.
+        return issue.attachments.create(file=handle)
 
 
 def update_issue_fields(issue, **fields):
@@ -261,10 +260,8 @@ def add_comment_with_attachment(
     if file_path:
         path = Path(file_path)
         with path.open("rb") as handle:
-            attachment = issue.attachments.create(
-                file=handle,
-                filename=filename or path.name,
-            )
+            # See attach_file(): older yandex-tracker-client versions don't accept "filename".
+            attachment = issue.attachments.create(file=handle)
             attachment_ids.append(attachment.id)
 
     # Then create the comment with attachment reference

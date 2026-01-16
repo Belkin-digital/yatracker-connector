@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+import codecs
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -65,6 +67,48 @@ except ImportError:
 
 # Initialize MCP server
 app = Server("yatracker-connector")
+
+_REFERENCE_NAME_RE = re.compile(r"\\(b'(?P<name>[^']*)'\\)")
+
+
+def _decode_python_bytes_escapes_to_utf8(text: str) -> str:
+    """
+    Convert strings like '\\xd0\\x90\\xd0\\xbb...' (repr of UTF-8 bytes)
+    into a proper unicode string.
+    """
+    try:
+        # 1) Interpret \xNN escapes into 0-255 codepoints
+        # 2) Convert those codepoints back to bytes via latin-1
+        # 3) Decode as UTF-8
+        return codecs.decode(text, "unicode_escape").encode("latin-1").decode("utf-8")
+    except Exception:
+        return text
+
+
+def _humanize_reference(value: Any) -> str:
+    """Best-effort human-readable label for Tracker reference objects."""
+    if value is None:
+        return ""
+
+    if isinstance(value, bytes):
+        try:
+            return value.decode("utf-8")
+        except Exception:
+            return value.decode(errors="replace")
+
+    # Many yandex-tracker-client objects expose .display
+    display = getattr(value, "display", None)
+    if display:
+        return str(display)
+
+    s = str(value)
+
+    # Often looks like: "<Reference to Users/b'8000...' (b'\\xd0...\\xd0...')>"
+    m = _REFERENCE_NAME_RE.search(s)
+    if m:
+        return _decode_python_bytes_escapes_to_utf8(m.group("name"))
+
+    return s
 
 
 @app.list_tools()
@@ -139,6 +183,29 @@ async def list_tools() -> List[Tool]:
                     "issue_key": {
                         "type": "string",
                         "description": "Issue key (e.g., CRM-19)",
+                    },
+                },
+                "required": ["issue_key"],
+            },
+        ),
+        Tool(
+            name="yatracker_download_comment_attachments",
+            description="Download all attachments from issue comments to a target directory (optionally only one comment).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_key": {
+                        "type": "string",
+                        "description": "Issue key (e.g., CRM-19)",
+                    },
+                    "comment_id": {
+                        "type": "string",
+                        "description": "Optional comment id (as string). If omitted, downloads from all comments.",
+                    },
+                    "target_dir": {
+                        "type": "string",
+                        "description": "Target directory path (default: ./downloads)",
+                        "default": "./downloads",
                     },
                 },
                 "required": ["issue_key"],
@@ -409,15 +476,53 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
 
             results = []
             for comment in comments:
+                attachments = []
+                if hasattr(comment, "attachments") and comment.attachments:
+                    for a in comment.attachments:
+                        attachments.append(
+                            {
+                                "id": str(getattr(a, "id", "")),
+                                "filename": getattr(a, "filename", "") or getattr(a, "name", ""),
+                            }
+                        )
                 results.append({
                     "id": str(comment.id),
                     "text": comment.text,
                     "createdAt": str(getattr(comment, "createdAt", "")),
+                    "attachments": attachments,
                 })
 
             return [TextContent(
                 type="text",
                 text=json.dumps(results, ensure_ascii=False, indent=2)
+            )]
+
+        elif name == "yatracker_download_comment_attachments":
+            issue_key = arguments["issue_key"]
+            comment_id = arguments.get("comment_id")
+            target_dir = arguments.get("target_dir", "./downloads")
+
+            issue = get_issue(client, issue_key)
+            comments = list_comments(issue)
+
+            downloaded_paths = []
+            if comment_id:
+                selected = None
+                for c in comments:
+                    if str(getattr(c, "id", "")) == str(comment_id):
+                        selected = c
+                        break
+                if not selected:
+                    return [TextContent(type="text", text=f"Comment {comment_id} not found for {issue_key}")]
+                downloaded_paths.extend(download_comment_attachments(selected, Path(target_dir) / issue_key / str(comment_id)))
+            else:
+                for c in comments:
+                    downloaded_paths.extend(download_comment_attachments(c, Path(target_dir) / issue_key / str(getattr(c, 'id', ''))))
+
+            results = [str(p) for p in downloaded_paths]
+            return [TextContent(
+                type="text",
+                text=f"Скачано {len(results)} файлов из комментариев:\n" + ("\n".join(results) if results else "")
             )]
 
         elif name == "yatracker_add_comment":
@@ -506,7 +611,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 results.append({
                     "key": queue.key,
                     "name": getattr(queue, "name", ""),
-                    "lead": str(getattr(queue, "lead", "")),
+                    "lead": _humanize_reference(getattr(queue, "lead", None)),
                 })
 
             return [TextContent(
