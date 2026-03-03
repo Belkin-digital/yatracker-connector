@@ -39,20 +39,25 @@ from yatracker_connector import (
     add_comment_with_attachment,
     attach_file,
     build_tracker_client,
+    create_worklog,
+    delete_worklog,
     download_attachments,
     download_comment_attachments,
     execute_transition,
     get_issue,
     get_queue,
     get_queue_workflows,
+    get_worklogs_report,
     list_all_fields,
     list_all_issue_types,
     list_comments,
+    list_issue_worklogs,
     list_queue_fields,
     list_queue_issue_types,
     list_queues,
     list_transitions,
     search_issues,
+    search_worklogs,
     update_issue_fields,
 )
 
@@ -396,6 +401,104 @@ async def list_tools() -> List[Tool]:
                 "required": ["issue_key", "text"],
             },
         ),
+        Tool(
+            name="yatracker_list_worklogs",
+            description="List all worklog (time tracking) entries for a specific issue.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_key": {
+                        "type": "string",
+                        "description": "Issue key (e.g., CRM-19)",
+                    },
+                },
+                "required": ["issue_key"],
+            },
+        ),
+        Tool(
+            name="yatracker_create_worklog",
+            description="Create a new worklog (time tracking) entry for an issue.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_key": {
+                        "type": "string",
+                        "description": "Issue key (e.g., ZEL-80)",
+                    },
+                    "duration": {
+                        "type": "string",
+                        "description": "Time spent as ISO 8601 duration (e.g., 'PT2H30M' = 2h 30min, 'PT1H' = 1h, 'P1D' = 1 day = 8h)",
+                    },
+                    "start": {
+                        "type": "string",
+                        "description": "Work date in YYYY-MM-DD format (default: today)",
+                    },
+                    "comment": {
+                        "type": "string",
+                        "description": "Optional comment describing the work done",
+                    },
+                },
+                "required": ["issue_key", "duration"],
+            },
+        ),
+        Tool(
+            name="yatracker_delete_worklog",
+            description="Delete a worklog (time tracking) entry for an issue. Use for corrections when a wrong record was logged.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_key": {
+                        "type": "string",
+                        "description": "Issue key (e.g., ZEL-80)",
+                    },
+                    "worklog_id": {
+                        "type": "string",
+                        "description": "Worklog record ID to delete (e.g., 477)",
+                    },
+                },
+                "required": ["issue_key", "worklog_id"],
+            },
+        ),
+        Tool(
+            name="yatracker_get_worklogs_report",
+            description="Generate a worklogs report with flexible grouping and aggregation. Returns time spent by users on issues.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "from_date": {
+                        "type": "string",
+                        "description": "Start date in YYYY-MM-DD format",
+                    },
+                    "to_date": {
+                        "type": "string",
+                        "description": "End date in YYYY-MM-DD format",
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "User ID or username to filter by (optional, omit for all authors)",
+                    },
+                    "queues": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of queue keys to filter by (e.g., ['CRM', 'DEV']). Optional, omit for all queues.",
+                    },
+                    "group_by": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": ["date", "issue", "queue", "status", "author"],
+                        },
+                        "description": "Grouping levels in order of nesting. Valid: date, issue, queue, status, author. Optional.",
+                    },
+                    "details": {
+                        "type": "boolean",
+                        "description": "If true, include detailed records in the deepest group. Default: false.",
+                        "default": False,
+                    },
+                },
+                "required": ["from_date", "to_date"],
+            },
+        ),
     ]
 
 
@@ -691,6 +794,62 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             return [TextContent(
                 type="text",
                 text=f"Комментарий добавлен к {issue_key}: {comment.id}"
+            )]
+
+        elif name == "yatracker_list_worklogs":
+            issue_key = arguments["issue_key"]
+            worklogs = list_issue_worklogs(client, issue_key)
+
+            return [TextContent(
+                type="text",
+                text=json.dumps(worklogs, ensure_ascii=False, indent=2)
+            )]
+
+        elif name == "yatracker_create_worklog":
+            issue_key = arguments["issue_key"]
+            duration = arguments["duration"]
+            start = arguments.get("start")
+            comment = arguments.get("comment")
+
+            worklog = create_worklog(issue_key, duration=duration, start=start, comment=comment)
+
+            return [TextContent(
+                type="text",
+                text=f"Worklog создан для {issue_key}:\n" + json.dumps(worklog, ensure_ascii=False, indent=2)
+            )]
+
+        elif name == "yatracker_delete_worklog":
+            issue_key = arguments["issue_key"]
+            worklog_id = arguments["worklog_id"]
+
+            delete_worklog(issue_key, worklog_id)
+
+            return [TextContent(
+                type="text",
+                text=f"Запись worklog {worklog_id} удалена из задачи {issue_key}"
+            )]
+
+        elif name == "yatracker_get_worklogs_report":
+            from_date = arguments["from_date"]
+            to_date = arguments["to_date"]
+            author = arguments.get("author")
+            queues = arguments.get("queues")
+            group_by = arguments.get("group_by")
+            details = arguments.get("details", False)
+
+            report = get_worklogs_report(
+                client,
+                from_date=from_date,
+                to_date=to_date,
+                author=author,
+                queues=queues,
+                group_by=group_by,
+                details=details,
+            )
+
+            return [TextContent(
+                type="text",
+                text=json.dumps(report, ensure_ascii=False, indent=2)
             )]
 
         else:
