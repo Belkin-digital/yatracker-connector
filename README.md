@@ -151,13 +151,15 @@ docker-compose up -d
 
 ```bash
 YATRACKER_TOKEN=your_oauth_token_here
-YATRACKER_ORG_ID=7579907
+YATRACKER_ORG_ID=your_organization_id
+# опционально, если ведёшь учёт приложения: YATRACKER_OAUTH_CLIENT_ID=...
 ```
 
 ### Как получить credentials:
 
 1. **Токен OAuth**: [Яндекс OAuth](https://oauth.yandex.ru/)
 2. **Org ID**: В Трекере → Администрирование → Организации → идентификатор
+3. **Client ID** (необязательно): в том же кабинете OAuth — идентификатор приложения; для вызовов API Трекера достаточно токена
 
 ## 📦 Структура проекта
 

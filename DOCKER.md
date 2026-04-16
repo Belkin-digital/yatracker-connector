@@ -25,7 +25,7 @@ docker-compose --version
 
 ```bash
 YATRACKER_TOKEN=your_token_here
-YATRACKER_ORG_ID=7579907
+YATRACKER_ORG_ID=your_organization_id
 ```
 
 ### 3. Запустите контейнер
@@ -57,12 +57,17 @@ docker-compose logs -f      # Следить за логами в реально
 docker-compose logs         # Показать все логи
 ```
 
-### Перезапуск после изменений
+### Перезапуск после изменений кода
+
+Код копируется в образ через `COPY` при сборке, поэтому **`docker restart` не обновляет код** — нужна пересборка:
+
 ```bash
 docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
 ```
+
+После пересборки переподключи MCP в Cursor: `Cmd+Shift+P` → **MCP: Restart Server** → `yatracker`.
 
 ## Подключение из Claude Code
 
@@ -170,7 +175,7 @@ docker build -t yatracker-mcp .
 docker run -d \
   -p 8080:8080 \
   -e YATRACKER_TOKEN=your_token \
-  -e YATRACKER_ORG_ID=7579907 \
+  -e YATRACKER_ORG_ID=your_organization_id \
   --name yatracker-mcp-server \
   yatracker-mcp
 ```

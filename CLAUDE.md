@@ -4,9 +4,13 @@
 
 Файл `.env` должен содержать:
 ```bash
-YATRACKER_TOKEN=y0__xD09bKiqveAAhik9Tsgk-bptBWhTNUdJM6GM7V9jQPCmWTGq-NKPQ
-YATRACKER_ORG_ID=7579907
+YATRACKER_TOKEN=your_oauth_token_here
+YATRACKER_ORG_ID=your_organization_id
+# Необязательно: Client ID приложения на oauth.yandex.ru (если хранишь рядом с токеном)
+# YATRACKER_OAUTH_CLIENT_ID=your_client_id
 ```
+
+Секреты не коммитить; шаблон — [config/sample.env](config/sample.env).
 
 ## Доступные очереди
 

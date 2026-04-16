@@ -62,4 +62,4 @@ Yandex Tracker API (v2)
 | MGT | Управление |
 | ISTRA / ISTR / ISTRATEST | Истра |
 
-Конфиг: `.env` → `YATRACKER_TOKEN`, `YATRACKER_ORG_ID=7579907`. Пример — [config/sample.env](config/sample.env).
+Конфиг: `.env` → `YATRACKER_TOKEN`, `YATRACKER_ORG_ID`; опционально `YATRACKER_OAUTH_CLIENT_ID` (Client ID с oauth.yandex.ru). Пример — [config/sample.env](config/sample.env).

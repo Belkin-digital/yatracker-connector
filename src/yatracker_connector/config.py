@@ -28,6 +28,8 @@ class Settings:
     token: str
     org_id: Optional[str] = None
     cloud_org_id: Optional[str] = None
+    #: OAuth-приложение (oauth.yandex.ru): Client ID. Нужен только для ручного получения/обновления токена; API Трекера использует ``token``.
+    oauth_client_id: Optional[str] = None
     api_url: str = "https://api.tracker.yandex.net/v3"
 
     def to_tracker_kwargs(self) -> Dict[str, str]:
@@ -53,6 +55,7 @@ def get_settings() -> Settings:
     token = os.getenv("YATRACKER_TOKEN")
     org_id = os.getenv("YATRACKER_ORG_ID")
     cloud_org_id = os.getenv("YATRACKER_CLOUD_ORG_ID")
+    oauth_client_id = os.getenv("YATRACKER_OAUTH_CLIENT_ID")
     api_url = os.getenv("YATRACKER_API_URL", "https://api.tracker.yandex.net/v3")
 
     if not token:
@@ -62,6 +65,7 @@ def get_settings() -> Settings:
         token=token.strip(),
         org_id=org_id.strip() if org_id else None,
         cloud_org_id=cloud_org_id.strip() if cloud_org_id else None,
+        oauth_client_id=oauth_client_id.strip() if oauth_client_id else None,
         api_url=api_url.strip(),
     )
 
