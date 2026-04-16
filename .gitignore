@@ -27,6 +27,7 @@ env/
 .env
 .env.local
 .env.*.local
+auth_client_ID.txt
 
 # Downloads
 downloads/
