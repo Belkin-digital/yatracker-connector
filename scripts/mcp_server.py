@@ -122,7 +122,7 @@ async def list_tools() -> List[Tool]:
     return [
         Tool(
             name="yatracker_search_issues",
-            description="Search and list issues from YaTracker queue. Returns key, summary, and status.",
+            description="Search and list issues from YaTracker queue. Returns key, summary, status, type, and parent_key.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -520,10 +520,16 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             for issue in issues:
                 status = getattr(issue, "status", None)
                 status_display = status.display if status else ""
+                issue_type = getattr(issue, "type", None)
+                type_display = issue_type.display if issue_type else ""
+                parent = getattr(issue, "parent", None)
+                parent_key = getattr(parent, "key", "") if parent else ""
                 results.append({
                     "key": issue.key,
                     "summary": getattr(issue, "summary", ""),
                     "status": status_display,
+                    "type": type_display,
+                    "parent_key": parent_key,
                 })
 
             return [TextContent(
